@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar/Sidebar";
 import { Link as LinkS } from "react-scroll";
 import $ from "jquery";
 
+
 const Home = (props) => {
   const [isOpen, setIsOpen] = useState(false);
 
