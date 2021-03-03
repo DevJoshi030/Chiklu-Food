@@ -1,30 +1,91 @@
 import React, { Fragment, useEffect, useState, useRef } from "react";
 import Navbar from "./Navbar/Navbar";
 import Sidebar from "./Sidebar/Sidebar";
-
-
+import { Link as LinkS } from "react-scroll";
+import $ from "jquery";
 
 const Home = (props) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const scrollToRef = (ref) => window.scrollTo(0, ref.current.offsetTop)
+  // ******************************************************************************************
 
-  let myRef = useRef(null)
-  var owlcategory = [];
+  // Save data in Localstorage
+  if (localStorage.getItem("checkout") == null) {
+    var checkout = {};
+  } else {
+    checkout = JSON.parse(localStorage.getItem("checkout"));
+    // console.log( document.getElementById('checkout').innerHTML);
+    if (document.getElementById("checkout")) {
+      document.getElementById("checkout").innerHTML = Object.keys(
+        checkout
+      ).length;
+    }
+    // updateChekout(checkout);
+  }
 
+  function called(id) {
+    console.log(id);
+    var idstr = id.toString();
+    // console.log(idstr);
+    if (checkout[idstr] != undefined) {
+      checkout[idstr] = checkout[idstr] + 1;
+      console.log("hello " + id);
+      console.log(document.getElementById(id).innerHTML);
+    } else {
+      checkout[idstr] = 1;
+    }
+    console.log(checkout);
+    localStorage.setItem("checkout", JSON.stringify(checkout));
+    document.getElementById("checkout").innerHTML = Object.keys(
+      checkout
+    ).length;
+    updateChekout(checkout);
+  }
 
-  // const executeScroll = () => scrollToRef(myRef)
-  const executeScroll = () => {
-    console.log("Clicked");
-    // let xyz = document.getElementsByClassName('catname').innerHTML;
-    var x = document.getElementsByClassName("catname1")[0].innerText;
-    // document.getElementsByClassName("demo").innerHTML = x;  
-    console.log(x);
-    scrollToRef(myRef);
-    console.log(myRef);
-  };
+  function updateChekout(checkout) {
+    var sum = 0;
+    for (var item in checkout) {
+      console.log(item);
+      sum = sum + checkout[item];
+      if (checkout[item][0] !== 0)
+        if (document.getElementById(item)) {
+          document.getElementById(
+            item
+          ).innerHTML = `<button id='minus${item}' class='minus'>-</button><span id='val${item}'>${checkout[item]}</span><button id='plus${item}' class='plus'>+</button>`;
+        }
+    }
+    localStorage.setItem("checkout", JSON.stringify(checkout));
+    document.getElementById("checkout").innerHTML = sum;
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+  // When we click on plus or minus button navigate value
+  $(".addtodish").on("click", ".minus", function () {
+    console.log("hiiii");
+    a = this.id.slice(7);
+    console.log(a);
+    checkout["pr" + a][0] = checkout["pr" + a][0] - 1;
+    checkout["pr" + a][0] = Math.max(0, checkout["pr" + a][0]);
+    document.getElementById("valpr" + a).innerHTML = checkout["pr" + a][0];
+    let count = document.getElementById(`valpr${a}`).textContent;
+    let price = document.getElementById(`pricepr${a}`);
+    updateChekout(checkout);
+    if (count === "0") {
+      document.getElementById(
+        "divpr" + a
+      ).innerHTML = `<button id="pr${a}" class="checkout" >ADD</button>`;
+      localStorage.clear();
+    }
+  });
+  $(".divpr").on("click", "button.plus", function () {
+    a = this.id.slice(6);
+    checkout["pr" + a][0] = checkout["pr" + a][0] + 1;
+    document.getElementById("valpr" + a).innerHTML = checkout["pr" + a][0];
+    let price = document.getElementById(`pricepr${a}`);
+    updateChekout(checkout);
+  });
+});
 
-
+  // ****************************************************************************************
   const toggle = () => {
     setIsOpen(!isOpen);
     // console.log("dwadwa");
@@ -40,22 +101,21 @@ const Home = (props) => {
 
   const generate = () => {
     let final = [];
-    // let category = [];
-
+    let category = [];
 
     Object.keys(menus).forEach(function (key) {
-      // category.push(key);
+      category.push(key);
       // console.log(category);
-    
-      // for(var i=0; i<category.length; i++){
-      //   if (category[i] === "Burger"){
-      //     console.log("Hii");
-      //   }
-      // }
-      console.log(key)
+
+      for (var i = 0; i < category.length; i++) {
+        if (category[i] === "Burger") {
+          // console.log("Hii");
+        }
+      }
+      // console.log(key);
 
       final.push(
-        <div class="categorytitle" ref={myRef} id={key}>
+        <div class="categorytitle" id={key}>
           <p>{key}</p>
         </div>
       );
@@ -67,15 +127,22 @@ const Home = (props) => {
                 <img src={menu.item_image} alt="burger" />
               </div>
               <div class="itemdesc">
-                <p class="title">{menu.item}</p>
+                <p class="title" id="name">
+                  {menu.item}
+                </p>
                 <p class="desc">{menu.item_desc}</p>
                 <div class="price">
-                  <p class="rs">Rs. 90</p>
-                  <div
-                    class="addtodish checkout"
-                    onClick={() => localStorage.setItem("hehje", "dwhjdhwj")}
-                  >
-                    <p class="">ADD TO DISH</p>
+                  <p class="rs" id="price">
+                    Rs. 90
+                  </p>
+                  <div id={`divpr${menu.id}`} class="addtodish">
+                    <p
+                      id={`pr${menu.id}`}
+                      class="checkout"
+                      onClick={() => called(`divpr${menu.id}`)}
+                    >
+                      ADD TO DISH
+                    </p>
                   </div>
                 </div>
               </div>
@@ -86,8 +153,6 @@ const Home = (props) => {
           </Fragment>
         )
       );
-
-
     });
 
     // menus.map((menu) => {
@@ -149,19 +214,24 @@ const Home = (props) => {
           {/* Carousel Category section */}
           <div class="category">
             <span class="carousel owl-carousel">
-
-                <div class="cat" onClick = {executeScroll}>
-                <div class="catimg">
-                  <img src="/static/images/hamburger.svg" alt="hamburger" />
+              <a href="#Burger">
+                <div class="cat">
+                  <div class="catimg">
+                    <img src="/static/images/hamburger.svg" alt="hamburger" />
+                  </div>
+                  <p class="catname1" to="Burger">
+                    Burger
+                  </p>
                 </div>
-                <p class="catname1">Burger</p>
-              </div>
-              <div class="cat" onClick = {executeScroll}>
-                <div class="catimg">
-                  <img src="/static/images/pizza.svg" alt="hamburger" />
+              </a>
+              <a href="#Kathiyawadi">
+                <div class="cat">
+                  <div class="catimg">
+                    <img src="/static/images/pizza.svg" alt="hamburger" />
+                  </div>
+                  <p class="catname">Kathiyawadi</p>
                 </div>
-                <p class="catname">Kathiyawadi</p>
-              </div>
+              </a>
             </span>
           </div>
           {/* Menu Category with Menu Listing */}
@@ -175,7 +245,7 @@ const Home = (props) => {
         <div class="footer_content">
           <div class="foot_left">
             <p class="total_qty">
-              2 Items{" "}
+              <span id="checkout">0</span> Items{" "}
               <span>
                 <small>In Dish</small>
               </span>

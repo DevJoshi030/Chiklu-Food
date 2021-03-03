@@ -20,7 +20,7 @@ class MenuSerializer(serializers.ModelSerializer):
     class Meta:
 
         model = Menu
-        fields = ('sr_no', 'restaurant', 'category', 'item', 'item_desc', 'item_image')
+        fields = ('id','sr_no', 'restaurant', 'category', 'item', 'item_desc', 'item_image')
 
 class OrderSerializer(serializers.ModelSerializer):
 
