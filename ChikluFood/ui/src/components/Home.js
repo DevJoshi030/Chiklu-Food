@@ -1,98 +1,34 @@
-import React, { Fragment, useEffect, useState, useRef } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import Navbar from "./Navbar/Navbar";
 import Sidebar from "./Sidebar/Sidebar";
 import { Link as LinkS } from "react-scroll";
-import $ from "jquery";
-
 
 const Home = (props) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [refresh, setRefresh] = useState(false);
+  const [menus, setMenus] = useState({});
 
-  // ******************************************************************************************
+  useEffect(() => {
+    if (!localStorage.getItem("menu"))
+      localStorage.setItem("menu", JSON.stringify({}));
+  }, []);
 
-  // Save data in Localstorage
-  if (localStorage.getItem("checkout") == null) {
-    var checkout = {};
-  } else {
-    checkout = JSON.parse(localStorage.getItem("checkout"));
-    // console.log( document.getElementById('checkout').innerHTML);
-    if (document.getElementById("checkout")) {
-      document.getElementById("checkout").innerHTML = Object.keys(
-        checkout
-      ).length;
-    }
-    // updateChekout(checkout);
-  }
+  const called = (id, name, price) => {
+    let item = [id, name, price];
 
-  function called(id) {
-    console.log(id);
-    var idstr = id.toString();
-    // console.log(idstr);
-    if (checkout[idstr] != undefined) {
-      checkout[idstr] = checkout[idstr] + 1;
-      console.log("hello " + id);
-      console.log(document.getElementById(id).innerHTML);
-    } else {
-      checkout[idstr] = 1;
-    }
-    console.log(checkout);
-    localStorage.setItem("checkout", JSON.stringify(checkout));
-    document.getElementById("checkout").innerHTML = Object.keys(
-      checkout
-    ).length;
-    updateChekout(checkout);
-  }
+    let menu = JSON.parse(localStorage.getItem("menu"));
+    if (!menu[id]) {
+      item.push(1);
+      menu[id] = item;
+    } else menu[id] = item;
 
-  function updateChekout(checkout) {
-    var sum = 0;
-    for (var item in checkout) {
-      console.log(item);
-      sum = sum + checkout[item];
-      if (checkout[item][0] !== 0)
-        if (document.getElementById(item)) {
-          document.getElementById(
-            item
-          ).innerHTML = `<button id='minus${item}' class='minus'>-</button><span id='val${item}'>${checkout[item]}</span><button id='plus${item}' class='plus'>+</button>`;
-        }
-    }
-    localStorage.setItem("checkout", JSON.stringify(checkout));
-    document.getElementById("checkout").innerHTML = sum;
-  }
-  document.addEventListener("DOMContentLoaded", () => {
-  // When we click on plus or minus button navigate value
-  $(".addtodish").on("click", ".minus", function () {
-    console.log("hiiii");
-    a = this.id.slice(7);
-    console.log(a);
-    checkout["pr" + a][0] = checkout["pr" + a][0] - 1;
-    checkout["pr" + a][0] = Math.max(0, checkout["pr" + a][0]);
-    document.getElementById("valpr" + a).innerHTML = checkout["pr" + a][0];
-    let count = document.getElementById(`valpr${a}`).textContent;
-    let price = document.getElementById(`pricepr${a}`);
-    updateChekout(checkout);
-    if (count === "0") {
-      document.getElementById(
-        "divpr" + a
-      ).innerHTML = `<button id="pr${a}" class="checkout" >ADD</button>`;
-      localStorage.clear();
-    }
-  });
-  $(".divpr").on("click", "button.plus", function () {
-    a = this.id.slice(6);
-    checkout["pr" + a][0] = checkout["pr" + a][0] + 1;
-    document.getElementById("valpr" + a).innerHTML = checkout["pr" + a][0];
-    let price = document.getElementById(`pricepr${a}`);
-    updateChekout(checkout);
-  });
-});
-
-  // ****************************************************************************************
-  const toggle = () => {
-    setIsOpen(!isOpen);
-    // console.log("dwadwa");
+    localStorage.setItem("menu", JSON.stringify(menu));
+    setRefresh((prevRefresh) => !prevRefresh);
   };
 
-  const [menus, setMenus] = useState({});
+  const toggle = () => {
+    setIsOpen(!isOpen);
+  };
 
   useEffect(async () => {
     await fetch(`/api/menu/${props.match.params.Restname}/`)
@@ -100,21 +36,54 @@ const Home = (props) => {
       .then((data) => setMenus(data));
   }, []);
 
+  const handlePlusMinus = (id, op) => {
+    let menu = JSON.parse(localStorage.getItem("menu"));
+    let item = menu[id];
+    let qty = item.pop();
+    if (op === "-" && qty === 1) {
+      delete menu[id];
+    } else if (op === "-") {
+      item.push(qty - 1);
+      menu[id] = item;
+    } else {
+      item.push(qty + 1);
+      menu[id] = item;
+    }
+    localStorage.setItem("menu", JSON.stringify(menu));
+    setRefresh((prevRefresh) => !prevRefresh);
+  };
+
+  const generateAddDish = (id, name, price) => {
+    let menu = JSON.parse(localStorage.getItem("menu"));
+    // setRefresh((prevRefresh) => !prevRefresh);
+
+    if (menu[id]) {
+      return (
+        <>
+          <button class="minus" onClick={() => handlePlusMinus(id, "-")}>
+            -
+          </button>
+          <span>{menu[id][3]}</span>
+          <button class="plus" onClick={() => handlePlusMinus(id, "+")}>
+            +
+          </button>
+        </>
+      );
+    }
+    return (
+      <div id={id} class="addtodish">
+        <p id={id} class="checkout" onClick={() => called(id, name, price)}>
+          ADD TO DISH
+        </p>
+      </div>
+    );
+  };
+
   const generate = () => {
     let final = [];
     let category = [];
 
     Object.keys(menus).forEach(function (key) {
-      category.push(key);
-      // console.log(category);
-
-      for (var i = 0; i < category.length; i++) {
-        if (category[i] === "Burger") {
-          // console.log("Hii");
-        }
-      }
-      // console.log(key);
-
       final.push(
         <div class="categorytitle" id={key}>
           <p>{key}</p>
@@ -136,15 +105,7 @@ const Home = (props) => {
                   <p class="rs" id="price">
                     Rs. 90
                   </p>
-                  <div id={`divpr${menu.id}`} class="addtodish">
-                    <p
-                      id={`pr${menu.id}`}
-                      class="checkout"
-                      onClick={() => called(`divpr${menu.id}`)}
-                    >
-                      ADD TO DISH
-                    </p>
-                  </div>
+                  {generateAddDish(menu.id, menu.item, menu.id)}
                 </div>
               </div>
             </div>
@@ -155,34 +116,6 @@ const Home = (props) => {
         )
       );
     });
-
-    // menus.map((menu) => {
-    //   final.push(
-    //     <Fragment>
-    //       <div class="categorytitle">
-    //         <p id="burger">{menu.category}</p>
-    //       </div>
-    //       <div class="item">
-    //         <div class="itemimg">
-    //           <img src={menu.item_image} alt="burger" />
-    //         </div>
-    //         <div class="itemdesc">
-    //           <p class="title">{menu.item}</p>
-    //           <p class="desc">{menu.item_desc}</p>
-    //           <div class="price">
-    //             <p class="rs">Rs. 90</p>
-    //             <div class="addtodish checkout">
-    //               <p class="">ADD TO DISH</p>
-    //             </div>
-    //           </div>
-    //         </div>
-    //       </div>
-    //       <div class="horizontal">
-    //         <hr />
-    //       </div>
-    //     </Fragment>
-    //   );
-    // });
     return final;
   };
   return (
